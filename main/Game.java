@@ -31,7 +31,6 @@ public class Game extends Canvas implements Runnable {
 	private InputManager input = new InputManager();
 	private RenderData gfxBuffer = new RenderData();
 	private Menu menu;
-	private int gamewidth = MapManager.getSpriteWidth();
 	private int viewport = Utility.WIDTH;
 	int offsetMinX = 0;
 	private int camX;
@@ -50,7 +49,7 @@ public class Game extends Canvas implements Runnable {
 	public static STATE state = STATE.MENU;
 	public static MAP map = MAP.M1;
 	// private boolean renderInit = false;
-	public static int test = 0;
+	public static int test1 = 0;
 	public static ImageLoader il = new ImageLoader();
 
 	public synchronized void start() {
@@ -122,9 +121,15 @@ public class Game extends Canvas implements Runnable {
 
 	public void camera() {
 		if (state == STATE.GAME && state != STATE.DEATH) {
-			int targetX =  gfxBuffer.getEntities()[0].getX() - Utility.WIDTH / 2;
-			camX += (targetX-camX)*0.03;
-		
+			int targetX = gfxBuffer.getEntities()[0].getX() - Utility.WIDTH / 2;
+			camX += (targetX - camX) * 0.03;
+
+			if (camX < 0) {
+				camX = 0;
+			} else if (camX > Utility.SPRITE_SIZE * MapManager.getWidth() - 200 - viewport) {
+				camX = Utility.SPRITE_SIZE * MapManager.getWidth() - 200 - viewport;
+			}
+
 		}
 	}
 
@@ -160,13 +165,11 @@ public class Game extends Canvas implements Runnable {
 			Text.render(g);
 		}
 		if (state == STATE.MENU) {
-			
+
 			g.setColor(Color.black);
 			g.fillRect(0, 0, Utility.WIDTH, Utility.HEIGHT);
 			menu.render(g);
-			
-		
-	
+
 		}
 		if (state == STATE.TEXT) {
 			if (GameManager.getKeyPressed(KeyEvent.VK_B)) {
@@ -174,8 +177,10 @@ public class Game extends Canvas implements Runnable {
 			}
 		}
 		if (state == STATE.GAME) {
+
 			if (!dieng) {
-				g.translate(-camX, 0);
+				g.translate(-camX, 0);// moving the screen
+
 			}
 			if (GameManager.getKeyPressed(KeyEvent.VK_T)) {
 				state = STATE.TEXT;
@@ -183,8 +188,8 @@ public class Game extends Canvas implements Runnable {
 			if (GameManager.getKeyPressed(KeyEvent.VK_ESCAPE)) {
 				state = STATE.MENU;
 			}
-	
-			g.drawImage(GraphicSet.skyBox, 0, 0, Utility.WIDTH, Utility.HEIGHT, null);
+
+			g.drawImage(GraphicSet.skyBox, 0, 0, MapManager.getWorldWidth(), Utility.HEIGHT, null);
 
 			for (int i = 0; i < gfxBuffer.getX() * gfxBuffer.getY(); i++) {
 				if (gfxBuffer.getMap().get(i) != null) {
@@ -192,17 +197,18 @@ public class Game extends Canvas implements Runnable {
 					int y = i / gfxBuffer.getX();
 					int ssize = Utility.SPRITE_SIZE;
 
-					g.drawImage(gfxBuffer.getMap().get(i), x * ssize-100, y * ssize, null);
+					g.drawImage(gfxBuffer.getMap().get(i), x * ssize - 100, y * ssize, null);
 				}
 			}
 			Font fnt0 = new Font("Arial", Font.BOLD, 15);
-			g.setFont(fnt0);
-			if (!dieng) {
-				g.drawString(
-						"Player x = " + gfxBuffer.getEntities()[0].getX() + "Player y = "
-								+ gfxBuffer.getEntities()[0].getY() + " Health = " + gfxBuffer.getEntities()[0].getHP(),
-						camX+550, 15);
+			g.setFont(fnt0);// seting fonts
+
+			if (!dieng) {// drawing coordinates
+				g.drawString("Player x = " + gfxBuffer.getEntities()[0].getX() + "Player y = "
+						+ (1000 - gfxBuffer.getEntities()[0].getY()) + " Health = "
+						+ gfxBuffer.getEntities()[0].getHP(), camX + 550, 15);
 			}
+
 			if (gfxBuffer.hasEntities()) {// drawing entities
 				for (int i = 0; i < gfxBuffer.getEntities().length; i++) {
 					if (gfxBuffer.getEntities()[i] != null)
@@ -224,7 +230,5 @@ public class Game extends Canvas implements Runnable {
 		game.start();
 
 	}
-
-
 
 }
