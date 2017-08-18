@@ -1,0 +1,143 @@
+package main.core;
+
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+import main.ImageLoader;
+import main.RenderData;
+import main.core.entity.EntityManager;
+import main.util.GraphicSet;
+import main.util.Utility;
+
+public class MapManager {
+	private static int width = 0;
+	private int height = 0;
+	private ImageLoader il = new ImageLoader();
+	private ArrayList<BufferedImage> map = new ArrayList<BufferedImage>();
+	private ArrayList<Boolean> collision = new ArrayList<Boolean>();
+
+	private boolean init = false;
+
+	public void update(String url) {
+		Scanner s = null;
+		try {
+			s = new Scanner(new File(url));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		boolean declaration = false;
+		boolean objects = false;
+
+		while (s.hasNextLine()) {
+			//reading the map file
+			String str = s.nextLine();
+			if (str.equals("#dec")) {//begin
+				declaration = true;
+				objects = false;
+			}
+
+			if (str.equals("#obj")) {
+				declaration = false;
+				objects = true;
+			}
+
+			if (declaration) {
+				if (str.contains("$w")) {//width
+					String num = str.substring(3);
+					width = stoi(num);
+				} else if (str.contains("$h")) {//height
+					String num = str.substring(3);
+					height = stoi(num);
+				} else if (str.contains("$skybox")) {//background
+					String skybox_url = str.substring(8);				
+					GraphicSet.changeSkyBox(skybox_url);
+				} else if (str.contains("$type")) {
+					String num = str.substring(6);
+					GraphicSet.changeTileSet(stoi(num));
+				}
+			}
+
+			if (objects) {
+				if (!init) {
+					init();
+				}
+				String[] substr = str.split(", ");
+
+				int x0 = 0, x1 = 0, y0 = 0, y1 = 0;
+				int xe = 0, ye = 0;
+				String name = "",urle = "";
+				boolean line = false;
+				boolean entity = false;
+				BufferedImage type = null;
+
+				switch (substr[0]) {
+				case "line":
+					x0 = stoi(substr[1]);
+					y0 = stoi(substr[2]);
+					x1 = stoi(substr[3]);
+					y1 = stoi(substr[4]);
+					line = true;
+					type = GraphicSet.tileSet.get(substr[5]);
+					break;
+				case "en":
+					xe = stoi(substr[1]);
+					ye = stoi(substr[2]);
+					urle = substr[3];
+					name = substr[4];
+					entity = true;
+				}
+
+				if (line) {
+					for (int i = conv2D(x0, y0); i < conv2D(x1, y1); i++) {
+						map.set(i, type);
+						collision.set(i, true);
+					}
+				}
+				if(entity){
+					EntityManager.addEntity(xe, ye, il.load(urle), name);
+				}
+			}
+		}
+
+		s.close();
+	}
+
+	public RenderData createRD() {
+		RenderData rd = new RenderData();
+		rd.setMap(map, width , height);
+		return rd;
+	}
+
+	public ArrayList<Boolean> getCollision() {
+
+		return collision;
+	}
+
+	public static int getWidth() {
+		return width;
+	}
+	public static int getWorldWidth() {
+		return width*Utility.SPRITE_SIZE;
+	}
+
+	private void init() {
+		for (int i = 0; i < width * height; i++) {
+			map.add(null);
+			collision.add(false);
+		}
+		init = true;
+	}
+
+	private static int stoi(String s) {
+		return Integer.parseInt(s);
+	}
+
+	private int conv2D(int x, int y) {
+		return (y * width) + x;
+	}
+
+}
